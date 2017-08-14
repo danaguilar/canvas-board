@@ -4,12 +4,15 @@ window.onload = function(){
 	var gameWidth = 960;
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
-	gameBoard.create(20,20);
+	gameBoard.create(10,10);
 	gameBoard.draw(canvas);
+	var cr = canvas.getBoundingClientRect();
+	var YOffset = cr.top;
+	var XOffset = cr.left;
 	canvas.addEventListener("mousedown",function(e){
 		e.preventDefault();
-		console.log("x position: "+ e.clientX);
-		console.log("y position: "+ e.clientY);
+		console.log("x client position: "+ (e.clientX - XOffset));
+		console.log("y client position: "+ (e.clientY - YOffset));
 	},false);
 }
 
