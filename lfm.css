@@ -2,6 +2,10 @@
 	padding: 0px;
 	margin: 0px;
 }
+
+body{
+	background-color: black;
+}
 .game-container{
 	width: 1000px;
 	margin: 0 auto;

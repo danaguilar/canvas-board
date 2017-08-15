@@ -1,18 +1,19 @@
-window.onload = function(){ 
+window.onload = function(){
 	var container = document.getElementsByClassName("game-container");
 	var gameHeight = 960;
 	var gameWidth = 960;
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
-	gameBoard.create(10,10);
+	gameBoard.create(20,20);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
 	var XOffset = cr.left;
 	canvas.addEventListener("mousedown",function(e){
 		e.preventDefault();
-		console.log("x client position: "+ (e.clientX - XOffset));
-		console.log("y client position: "+ (e.clientY - YOffset));
+		var xpos = e.clientX - XOffset;
+		var ypos = e.clientY - YOffset;
+		gameBoard.clicked(xpos, ypos);
 	},false);
 }
 
@@ -56,7 +57,11 @@ var gameBoard = (function(){
 		this.onClick = function(){
 			this.bgcolor = '#'+Math.floor(Math.random()*16777215).toString(16);
 			this.draw();
-		}
+		};
+
+		this.randomColor = function(){
+			this.bgcolor = '#'+Math.floor(Math.random()*16777215).toString(16);
+		};
 	};
 
 	//Creates the board as a grid of squares, height by width big. Also links those squares based on their position to each other
@@ -90,12 +95,19 @@ var gameBoard = (function(){
 					}
 				}
 				//pushes the square into the row
-				newSquare.bgcolor = '#'+Math.floor(Math.random()*16777215).toString(16);
 				row.push(newSquare);
 			}
 			//pushes the row into the board
 			boardArray.push(row);
 		}
+	};
+
+	var clicked = function(xpos, ypos){
+		var col = Math.floor(xpos/size);
+		var row = Math.floor(ypos/size);
+		var foundSquare = boardArray[col][row];
+		foundSquare.randomColor();
+		foundSquare.draw();
 	};
 
 	var draw = function(canvas){
@@ -134,6 +146,7 @@ var gameBoard = (function(){
 
 	return {
 		create : create,
-		draw : draw
+		draw : draw,
+		clicked : clicked
 	}
 })();
