@@ -4,12 +4,12 @@ window.onload = function(){
 	var gameWidth = 960;
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
-	gameBoard.create(20,20);
+	gameBoard.create(960,960);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
 	var XOffset = cr.left;
-	canvas.addEventListener("mousedown",function(e){
+	canvas.addEventListener("mousemove",function(e){
 		e.preventDefault();
 		var xpos = e.clientX - XOffset;
 		var ypos = e.clientY - YOffset;
