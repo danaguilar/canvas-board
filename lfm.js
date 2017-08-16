@@ -4,37 +4,22 @@ window.onload = function(){
 	var gameWidth = 960;
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
-	gameBoard.create(960,960);
+	gameBoard.create(50,50);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
 	var XOffset = cr.left;
-	canvas.addEventListener("mousemove",function(e){
+	canvas.addEventListener("click",function(e){
 		e.preventDefault();
 		var xpos = e.clientX - XOffset;
 		var ypos = e.clientY - YOffset;
 		gameBoard.clicked(xpos, ypos);
 	},false);
+	var player = new character(gameBoard.getSquare(2,3));
+	player.setDestination(gameBoard.getSquare(0,0))
+	console.log(player.findPath()); 
 }
 
-var drawGrid = function(canvasID,size){
-	var canvas = document.getElementById(canvasID);
-	var ctx = canvas.getContext("2d");
-	var boardHeight = 0;
-	var boardWidth = 0;
-	canHeight = canvas.height;
-	canWidth = canvas.width;
-	for(var i = 0; i <= canvas.width; i += size){
-		ctx.moveTo(i, 0);
-		ctx.lineTo(i,canHeight);
-		ctx.stroke();
-	}
-	for(var j = 0; j <= canvas.width; j += size){
-		ctx.moveTo(0,j);
-		ctx.lineTo(canWidth,j);
-		ctx.stroke();
-	}
-}
 
 var gameBoard = (function(){
 	//Array to store all the rows of squares. Every square can be accessed with boardArray[yloc][xloc]
@@ -46,17 +31,13 @@ var gameBoard = (function(){
 	var square = function(xloc, yloc){
 		this.xloc = xloc;
 		this.yloc = yloc;
+		this.neighbors = {};
 		this.name = function(){
 			return this.xloc + "-" + this.yloc;
 		}
 		this.draw = function(){
 			ctx.fillStyle = this.bgcolor;
 			ctx.fillRect(this.xloc*size, this.yloc*size, size, size);
-		};
-
-		this.onClick = function(){
-			this.bgcolor = '#'+Math.floor(Math.random()*16777215).toString(16);
-			this.draw();
 		};
 
 		this.randomColor = function(){
@@ -87,11 +68,11 @@ var gameBoard = (function(){
 					linkUpDown(newSquare,aboveSquare);
 
 					if(y>0){
-						linkTopLeftBtmRight(newSquare, aboveSquare.left);
+						linkTopLeftBtmRight(newSquare, aboveSquare.neighbors['left']);
 					}
 
 					if(y<(height-1)){
-						linkTopRightBtmLeft(newSquare,aboveSquare.right);
+						linkTopRightBtmLeft(newSquare,aboveSquare.neighbors['right']);
 					}
 				}
 				//pushes the square into the row
@@ -124,29 +105,71 @@ var gameBoard = (function(){
 
 	//Functions to link pairs fo squares together
 	var linkLeftRight = function(square1, square2){
-		square1.left = square2;
-		square2.right = square1;
+		square1.neighbors['left'] = square2;
+		square2.neighbors['right'] = square1;
 	};
 	var linkUpDown = function(square1, square2){
-		square1.up = square2;
-		square2.down = square1;
+		square1.neighbors['up'] = square2;
+		square2.neighbors['down'] = square1;
 	};
 	var linkTopRightBtmLeft = function(square1,square2){
-		square1.topRight = square2;
-		square2.btmLeft = square1;
+		square1.neighbors['topRight'] = square2;
+		square2.neighbors['btmLeft'] = square1;
 	};
 	var linkTopLeftBtmRight = function(square1,square2){
-		square1.topLeft = square2;
-		square2.btmRight = square1;
+		square1.neighbors['topLeft'] = square2;
+		square2.neighbors['btmRight'] = square1;
 	};
 
-	var getSquareByPixel = function(x, y){
-
+	var getSquare = function(xloc, yloc){
+		return boardArray[yloc][xloc];
 	}
+
 
 	return {
 		create : create,
 		draw : draw,
-		clicked : clicked
+		clicked : clicked,
+		getSquare : getSquare
 	}
 })();
+
+var character = function(location){
+	this.location = location;
+	this.destination = null;
+	var calculatedSquare = function(square, moveValue, heuristic){
+		this.square = square;
+		this.moveValue = moveValue;
+		this.heuristic = heuristic;
+		this.value = moveValue + heuristic;
+	};
+
+	var getHeuristic = function(square){
+		horizMovement = Math.abs(square.xloc - this.destination.xloc);
+		vertMovement = Math.abs(square.yloc - this.destination.yloc);
+		return horizMovement + vertMovement;
+	};
+
+	this.setDestination = function(square){
+		destination = square;
+	};
+
+	this.findPath = function(){
+		var openSet = [];
+		var currentSquare = new calculatedSquare(this.location, 0, getHeuristic(location));
+		var closedSet = [currentSquare];
+		var getNeighboringSquares = function(){
+			console.log(currentSquare);
+			var neighbors = currentSquare.neighbors;
+			console.log(neighbors);
+			var calculatedNeighbors = [];
+			for(var direction in neighbors){
+				var nearbySquare = neighbors[direction];
+				calculatedNeighbors.push(new calculatedSquare(nearbySquare, currentSquare.moveValue + 1, getHeuristic(nearbySquare)));
+			}
+			return calculatedNeighbors;
+		};
+		openSet = openSet.concat(getNeighboringSquares());
+	return openSet;
+	}
+};
