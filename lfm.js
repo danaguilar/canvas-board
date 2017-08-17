@@ -147,6 +147,8 @@ var gameBoard = (function(){
 })();
 
 var character = function(location){
+	this.imageObj = new Image();
+	this.imageObj.src = "https://image.ibb.co/ca1PZv/guy.png";
 	this.location = location;
 	this.path = [];
 	this.destination = null;
@@ -245,13 +247,9 @@ var character = function(location){
 	}
 
 	this.draw = function(canvas, size){
-		var imageObj = new Image();
 		ctx = canvas.getContext("2d");
-		imageObj.src = "images/guy.PNG";
 		var xpos = this.location.xloc;
 		var ypos = this.location.yloc;
-    	imageObj.onload = function() {
-    		ctx.drawImage(this, xpos*size, ypos*size,size,size);
-    	};
+		ctx.drawImage(this.imageObj, xpos*size, ypos*size,size,size);
 	};
 };
