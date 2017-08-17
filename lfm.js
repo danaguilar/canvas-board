@@ -6,6 +6,7 @@ window.onload = function(){
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
 	gameBoard.create(20,20);
+	gameBoard.createObstacles(50);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
@@ -16,9 +17,7 @@ window.onload = function(){
 		var ypos = e.clientY - YOffset;
 		player.setDestination(gameBoard.clicked(xpos, ypos));
 	},false);
-	var player = new character(gameBoard.getSquare(2,3));
-	player.destination = gameBoard.getSquare(0,0);
-	player.findPath();
+	var player = new character(gameBoard.getSquare(0,0));
 	setInterval(function(){
 		player.update();
 		gameBoard.draw(canvas);
@@ -49,8 +48,10 @@ var gameBoard = (function(){
 		this.randomColor = function(){
 			this.bgcolor = '#'+Math.floor(Math.random()*16777215).toString(16);
 		};
-
 		this.empty = true;
+		this.passable = true;
+		this.danger = 0;
+		this.difficulty = 1;
 	};
 
 	//Creates the board as a grid of squares, height by width big. Also links those squares based on their position to each other
@@ -98,6 +99,20 @@ var gameBoard = (function(){
 		return foundSquare;
 	};
 
+	var createObstacles = function(numOfObs){
+		console.log("creating Obstacles");
+		var colSize = boardArray.length;
+		var rowSize = boardArray[0].length;
+		for(var i = 0; i < numOfObs; i++){
+			var randCol = Math.floor(Math.random()*(colSize));
+			var randRow = Math.floor(Math.random()*(rowSize));
+			console.log(randCol);
+			console.log(randRow);
+			boardArray[randCol][randRow].passable = false;
+			boardArray[randCol][randRow].bgcolor = "#000000";
+		}
+	};
+
 	var draw = function(canvas){
 		ctx = canvas.getContext("2d");
 		var canvasHeight = canvas.height;
@@ -142,7 +157,8 @@ var gameBoard = (function(){
 		draw : draw,
 		clicked : clicked,
 		getSquare : getSquare,
-		getSize : getSize
+		getSize : getSize,
+		createObstacles : createObstacles
 	}
 })();
 
@@ -174,8 +190,8 @@ var character = function(location){
 		var calculatedNeighbors = [];
 		for(var direction in neighbors){
 			var nearbySquare = neighbors[direction];
-			var nearbyCalculated = new calculatedSquare(nearbySquare, currentSquare.moveValue + 1, getHeuristic(nearbySquare, this.destination),currentSquare);
-			if(!hasSquare(closedSet, nearbySquare) && !hasSquare(openSet, nearbySquare)){
+			if(!hasSquare(closedSet, nearbySquare) && !hasSquare(openSet, nearbySquare) && nearbySquare.passable){
+				var nearbyCalculated = new calculatedSquare(nearbySquare, currentSquare.moveValue + 1, getHeuristic(nearbySquare, this.destination),currentSquare);
 				calculatedNeighbors.push(nearbyCalculated);
 			}
 		}
@@ -196,9 +212,7 @@ var character = function(location){
 		var openSet = [];
 		var closedSet = [];
 		var currentSquare = new calculatedSquare(this.location, 0, getHeuristic(location, this.destination), null);
-		var trueMatch = new calculatedSquare(this.location, 2, getHeuristic(location, this.destination), null);
-		var falseMatch = new calculatedSquare(this.destination, 0, getHeuristic(location, this.destination), null);
-		while(currentSquare.heuristic > 0){
+		while(currentSquare.heuristic > 0 ){
 			closedSet.push(currentSquare);
 		    openSet = openSet.concat(getNeighboringSquares.call(this, currentSquare,closedSet,openSet));
 		    openSet.sort(function(a,b){
