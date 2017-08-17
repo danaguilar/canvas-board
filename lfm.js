@@ -189,13 +189,23 @@ var character = function(location){
 		var neighbors = currentSquare.square.neighbors;
 		var calculatedNeighbors = [];
 		for(var direction in neighbors){
+			var directionValue = getDirValue(direction);
 			var nearbySquare = neighbors[direction];
 			if(!hasSquare(closedSet, nearbySquare) && !hasSquare(openSet, nearbySquare) && nearbySquare.passable){
-				var nearbyCalculated = new calculatedSquare(nearbySquare, currentSquare.moveValue + 1, getHeuristic(nearbySquare, this.destination),currentSquare);
+				var nearbyCalculated = new calculatedSquare(nearbySquare, currentSquare.moveValue + directionValue, getHeuristic(nearbySquare, this.destination),currentSquare);
 				calculatedNeighbors.push(nearbyCalculated);
 			}
 		}
 		return calculatedNeighbors;
+	};
+
+	var getDirValue = function(direction){
+		if(direction == "left" || direction == "right" || direction == "up" || direction == "down"){
+			return 1;
+		}
+		else{
+			return 1.5;
+		}
 	};
 
 	var hasSquare = function(array,square){
