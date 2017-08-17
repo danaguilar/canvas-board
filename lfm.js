@@ -6,7 +6,7 @@ window.onload = function(){
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
 	gameBoard.create(20,20);
-	gameBoard.createObstacles(50);
+	gameBoard.createObstacles(100);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
@@ -248,7 +248,11 @@ var character = function(location){
 	}
 	
 	this.setDestination = function(square){
+		if(!(this.destination==null)){
+			this.destination.bgcolor = "#FFFFFF"
+		}
 		this.destination = square;
+		this.destination.bgcolor = "#228B22"
 		this.findPath();
 	};
 
