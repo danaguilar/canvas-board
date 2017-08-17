@@ -4,7 +4,7 @@ window.onload = function(){
 	var gameWidth = 960;
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
-	gameBoard.create(50,50);
+	gameBoard.create(20,20);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
@@ -16,8 +16,9 @@ window.onload = function(){
 		gameBoard.clicked(xpos, ypos);
 	},false);
 	var player = new character(gameBoard.getSquare(2,3));
-	player.setDestination(gameBoard.getSquare(0,0))
-	console.log(player.findPath()); 
+	player.destination = gameBoard.getSquare(0,0);
+	console.log(player.findPath());
+	player.draw(canvas, gameBoard.getSize.call(gameBoard, canvas));
 }
 
 
@@ -103,6 +104,12 @@ var gameBoard = (function(){
 		});
 	};
 
+	var getSize = function(canvas){
+		var canvasHeight = canvas.height;
+		var canvasWidth = canvas.width;
+		return canvasHeight / boardHeight;
+	};
+
 	//Functions to link pairs fo squares together
 	var linkLeftRight = function(square1, square2){
 		square1.neighbors['left'] = square2;
@@ -124,52 +131,69 @@ var gameBoard = (function(){
 	var getSquare = function(xloc, yloc){
 		return boardArray[yloc][xloc];
 	}
-
-
 	return {
 		create : create,
 		draw : draw,
 		clicked : clicked,
-		getSquare : getSquare
+		getSquare : getSquare,
+		getSize : getSize
 	}
 })();
 
 var character = function(location){
 	this.location = location;
 	this.destination = null;
-	var calculatedSquare = function(square, moveValue, heuristic){
+
+	var calculatedSquare = function(square, moveValue, heuristic, cameFrom){
 		this.square = square;
+		this.cameFrom = cameFrom;
 		this.moveValue = moveValue;
 		this.heuristic = heuristic;
 		this.value = moveValue + heuristic;
 	};
 
-	var getHeuristic = function(square){
-		horizMovement = Math.abs(square.xloc - this.destination.xloc);
-		vertMovement = Math.abs(square.yloc - this.destination.yloc);
+	var getHeuristic = function(square, destination){
+		horizMovement = Math.abs(square.xloc - destination.xloc);
+		vertMovement = Math.abs(square.yloc - destination.yloc);
 		return horizMovement + vertMovement;
 	};
 
-	this.setDestination = function(square){
-		destination = square;
+	var getNeighboringSquares = function(currentSquare, closedSet){
+		var neighbors = currentSquare.square.neighbors;
+		var calculatedNeighbors = [];
+		for(var direction in neighbors){
+			var nearbySquare = neighbors[direction];
+			var nearbyCalculated = new calculatedSquare(nearbySquare, currentSquare.moveValue + 1, getHeuristic(nearbySquare, this.destination),currentSquare);
+			if(!closedSet.includes(nearbyCalculated)){
+				calculatedNeighbors.push(nearbyCalculated);
+			}
+		}
+		return calculatedNeighbors;
 	};
 
 	this.findPath = function(){
 		var openSet = [];
-		var currentSquare = new calculatedSquare(this.location, 0, getHeuristic(location));
-		var closedSet = [currentSquare];
-		var getNeighboringSquares = function(){
-			console.log(currentSquare);
-			var neighbors = currentSquare.neighbors;
-			console.log(neighbors);
-			var calculatedNeighbors = [];
-			for(var direction in neighbors){
-				var nearbySquare = neighbors[direction];
-				calculatedNeighbors.push(new calculatedSquare(nearbySquare, currentSquare.moveValue + 1, getHeuristic(nearbySquare)));
-			}
-			return calculatedNeighbors;
-		};
-		openSet = openSet.concat(getNeighboringSquares());
-	return openSet;
-	}
+		var closedSet = [];
+		var currentSquare = new calculatedSquare(this.location, 0, getHeuristic(location, this.destination), null);
+		while(currentSquare.heuristic > 0){
+			closedSet.push(currentSquare);
+		  openSet = openSet.concat(getNeighboringSquares.call(this, currentSquare,closedSet));
+			openSet.sort(function(a,b){
+				return a.value - b.value;
+			});
+			currentSquare = openSet[0];
+		}
+		return closedSet;
+	};
+
+	this.draw = function(canvas, size){
+		var imageObj = new Image();
+		ctx = canvas.getContext("2d");
+		imageObj.src = "images/guy.PNG";
+		var xpos = this.location.xloc;
+		var ypos = this.location.yloc;
+    imageObj.onload = function() {
+    	ctx.drawImage(this, xpos*size, ypos*size,size,size);
+    };
+	};
 };
