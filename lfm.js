@@ -5,8 +5,8 @@ window.onload = function(){
 	var gameWidth = 960;
 	container[0].innerHTML = "<canvas id='gameCanvas' height = '" + gameHeight + "px' width = '" + gameWidth+ "px'></canvas>"
 	var canvas = document.getElementById('gameCanvas');
-	gameBoard.create(20,20);
-	gameBoard.createObstacles(100);
+	gameBoard.create(50,50);
+	gameBoard.createObstacles(800);
 	gameBoard.draw(canvas);
 	var cr = canvas.getBoundingClientRect();
 	var YOffset = cr.top;
@@ -19,10 +19,14 @@ window.onload = function(){
 	},false);
 	var player = new character(gameBoard.getSquare(0,0));
 	setInterval(function(){
-		player.update();
+		player.update(gameBoard);
 		gameBoard.draw(canvas);
 		player.draw(canvas, gameBoard.getSize.call(gameBoard, canvas));
 	},1000/FRAMERATE);
+
+	//Up next! Creating explosions to kill the new player 
+	//var myExplosion = new explosion(gameBoard.getSquare(3,3),3);
+	//console.log(myExplosion);
 }
 
 
@@ -106,8 +110,7 @@ var gameBoard = (function(){
 		for(var i = 0; i < numOfObs; i++){
 			var randCol = Math.floor(Math.random()*(colSize));
 			var randRow = Math.floor(Math.random()*(rowSize));
-			console.log(randCol);
-			console.log(randRow);
+			boardArray[randCol][randRow].empty = false;
 			boardArray[randCol][randRow].passable = false;
 			boardArray[randCol][randRow].bgcolor = "#000000";
 		}
@@ -129,6 +132,16 @@ var gameBoard = (function(){
 		var canvasHeight = canvas.height;
 		var canvasWidth = canvas.width;
 		return canvasHeight / boardHeight;
+	};
+
+	var getDirection = function(square1, square2){
+		var foundDir = "";
+		var neighbors = square1.neighbors;
+		for(var direction in neighbors){
+			if(neighbors[direction] == square2){
+				return direction;
+			}
+		}
 	};
 
 	//Functions to link pairs fo squares together
@@ -158,7 +171,8 @@ var gameBoard = (function(){
 		clicked : clicked,
 		getSquare : getSquare,
 		getSize : getSize,
-		createObstacles : createObstacles
+		createObstacles : createObstacles,
+		getDirection : getDirection
 	}
 })();
 
@@ -169,7 +183,7 @@ var character = function(location){
 	this.path = [];
 	this.destination = null;
 	//How often the entity moves in seconds
-	this.speed = 1000/.5;
+	this.speed = 1000/.75;
 
 	var calculatedSquare = function(square, moveValue, heuristic, cameFrom){
 		this.square = square;
@@ -238,18 +252,18 @@ var character = function(location){
 		this.path = path.reverse();
 	};
 
-	this.update = (function(){
+	this.update = function(){
 		var counter = 0; 
-		var counterGoal = Math.floor(this.speed/FRAMERATE);
-		return function(){
-				var counterGoal = Math.floor(this.speed/FRAMERATE);
+		return function(board){
+				var speedMod = getDirValue(board.getDirection(this.location, this.path[0]))
+				var counterGoal = Math.floor((this.speed/FRAMERATE)*speedMod);
 				counter++;
 				if(counter > counterGoal && this.path.length > 0){
 					this.setLocation(this.path.shift());
 					counter = 0;
 				}
 			};
-	})();
+	}.call(this);
 
 	this.setLocation = function(square){
 		this.location.empty = true;
@@ -258,21 +272,15 @@ var character = function(location){
 	}
 	
 	this.setDestination = function(square){
-		if(!(this.destination==null)){
-			this.destination.bgcolor = "#FFFFFF"
+		if(square.passable){
+			if(!(this.destination==null)){
+				this.destination.bgcolor = "#FFFFFF"
+			}
+			this.destination = square;
+			this.destination.bgcolor = "#228B22"
+			this.findPath();
 		}
-		this.destination = square;
-		this.destination.bgcolor = "#228B22"
-		this.findPath();
 	};
-
-	this.drawPath = function(canvas,path,size){
-		ctx = canvas.getContext("2d");
-		for(var i = 0; i < path.length; i++){
-			path[i].bgcolor = "#FF0000";
-			path[i].draw(ctx, size);
-		}
-	}
 
 	this.draw = function(canvas, size){
 		ctx = canvas.getContext("2d");
@@ -281,3 +289,44 @@ var character = function(location){
 		ctx.drawImage(this.imageObj, xpos*size, ypos*size,size,size);
 	};
 };
+
+var explosion = function(square, radius){
+	this.radius = radius;
+	this.squares = [];
+	this.init = function(square){
+		collectSquares(square,this.squares,0);
+	};
+
+	this.init();
+
+	var collectSquares = function(square,squareArray,counter){
+		if(counter <= radius && !hasSquare(squareArray, square)){
+			squareArray.push(square);
+			var cardinals = getCardinals(square);
+			for(square in cardinals){
+				collectSquares(square, squareArray, counter+1);
+			}
+		}
+	};
+
+	var hasSquare = function(array,square){
+		var squareExists = false;
+		for(var i = 0; i < array.length ; i++){
+			if(array[i].square == square){
+				squareExists = true;
+			}
+		}
+		return squareExists;
+	};
+
+	var getCardinals = function(square){
+		var cardinals = [];
+		var neighbors = square.neighbors;
+		for(var direction in neighbors){
+			if(direction == "left" || direction == "right" || direction == "up" || direction == "down"){
+				cardinals.push(neighbors[direction]);
+			}
+		}
+		return cardinals;
+	};
+};	
