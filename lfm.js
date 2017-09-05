@@ -24,7 +24,7 @@ window.onload = function(){
 		player.draw(canvas, gameBoard.getSize.call(gameBoard, canvas));
 	},1000/FRAMERATE);
 
-	//Up next! Creating explosions to kill the new player 
+	//Up next! Creating explosions to kill the new player
 	//var myExplosion = new explosion(gameBoard.getSquare(3,3),3);
 	//console.log(myExplosion);
 }
@@ -81,11 +81,11 @@ var gameBoard = (function(){
 					linkUpDown(newSquare,aboveSquare);
 
 					if(y>0){
-						linkTopLeftBtmRight(newSquare, aboveSquare.neighbors['left']);
+						//linkTopLeftBtmRight(newSquare, aboveSquare.neighbors['left']);
 					}
 
 					if(y<(height-1)){
-						linkTopRightBtmLeft(newSquare,aboveSquare.neighbors['right']);
+						//linkTopRightBtmLeft(newSquare,aboveSquare.neighbors['right']);
 					}
 				}
 				//pushes the square into the row
@@ -238,22 +238,31 @@ var character = function(location){
 		var currentSquare = new calculatedSquare(this.location, 0, getHeuristic(location, this.destination), null);
 		while(currentSquare.heuristic > 0 ){
 			closedSet.push(currentSquare);
-		    openSet = openSet.concat(getNeighboringSquares.call(this, currentSquare,closedSet,openSet));
-		    openSet.sort(function(a,b){
+		  openSet = openSet.concat(getNeighboringSquares.call(this, currentSquare,closedSet,openSet));
+			if(openSet.length == 0){
+				break;
+			}
+		  openSet.sort(function(a,b){
 				return a.value - b.value;
 			 });
-			 currentSquare = openSet.shift();
+			currentSquare = openSet.shift();
 		}
-		var path = [];
-		while(!(currentSquare.cameFrom == null)){
-			path.push(currentSquare.square);
-			currentSquare = currentSquare.cameFrom;
+		if(currentSquare.heuristic == 0){
+			var path = [];
+			while(!(currentSquare.cameFrom == null)){
+				path.push(currentSquare.square);
+				currentSquare = currentSquare.cameFrom;
+			}
+			this.path = path.reverse();
+			return true
 		}
-		this.path = path.reverse();
+		else{
+			return false
+		}
 	};
 
 	this.update = function(){
-		var counter = 0; 
+		var counter = 0;
 		return function(board){
 				var speedMod = getDirValue(board.getDirection(this.location, this.path[0]))
 				var counterGoal = Math.floor((this.speed/FRAMERATE)*speedMod);
@@ -270,15 +279,22 @@ var character = function(location){
 		this.location = square;
 		this.location.empty = false;
 	}
-	
+
 	this.setDestination = function(square){
 		if(square.passable){
 			if(!(this.destination==null)){
 				this.destination.bgcolor = "#FFFFFF"
 			}
 			this.destination = square;
-			this.destination.bgcolor = "#228B22"
-			this.findPath();
+			var pathFound = this.findPath();
+			if(pathFound){
+				this.destination.bgcolor = "#228B22"
+			}
+			else{
+				this.destination.bgcolor = "#ff0000"
+			}
+
+
 		}
 	};
 
@@ -329,4 +345,4 @@ var explosion = function(square, radius){
 		}
 		return cardinals;
 	};
-};	
+};
